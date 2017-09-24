@@ -9,6 +9,9 @@ int main()
 
 	FrameServer frame_server;
 
-	frame_server.Parse(src_file,2);
+	if (frame_server.Parse(src_file,2) != 0)
+	{
+		printf("decode error!\n");
+	}
 	return 0;
 }
