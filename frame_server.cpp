@@ -151,11 +151,11 @@ int FrameServer::Parse(std::string _video_file, int mode) {
 		//ReadStream(frame_start);
 
 		if(!mode) {
-			Colour::canvas_image canvas_ = global_rgb_hist_.canvas();
+			Colour::canvas_image canvas_ = global_rgb_hist_.hilbert_canvas();
 			std::string file_out = "canvas.bmp";
 			WriteBitmap(file_out,canvas_.width,canvas_.height,canvas_.planes,canvas_.data);
 
-			canvas_ = global_rgb_hist_.sorted_canvas();
+			canvas_ = global_rgb_hist_.hilbert_sorted_canvas();
 			file_out = "sorted_canvas.bmp";
 			WriteBitmap(file_out,canvas_.width,canvas_.height,canvas_.planes,canvas_.data);
 			std::string hist_filename = "hist.dat";

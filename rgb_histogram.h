@@ -45,6 +45,8 @@ public:
 	Colour::canvas_image & canvas();
 	Colour::canvas_image & sorted_canvas();
 	Colour::canvas_image & make_colour_groups();
+  Colour::canvas_image & hilbert_canvas();	
+	Colour::canvas_image & hilbert_sorted_canvas();
 protected:
 	void init();
 	std::vector<uint32_t> canvas_data_;;

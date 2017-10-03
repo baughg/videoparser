@@ -1,4 +1,5 @@
 #include "rgb_histogram.h"
+#include "hilbert_curve2d.h"
 #include <algorithm>
 #include <stdio.h>
 
@@ -25,6 +26,119 @@ void RGBHistogram::init()
 void RGBHistogram::clear()
 {
 	memset(&hist_[0],0,hist_.size()*sizeof(hist_[0]));
+}
+
+Colour::canvas_image & RGBHistogram::hilbert_canvas()
+{
+	const uint32_t colours = canvas_image_.height * canvas_image_.width;
+	Colour::rgba colour;
+	uint32_t * p_colour;
+	p_colour = (uint32_t *)&colour;
+	colour.a = 0;
+	std::vector<uint32_t> colour_lookup;
+
+	FILE* rgb_file = NULL;
+
+	rgb_file = fopen("rgb_line.dat", "rb");
+
+
+	if (!rgb_file)
+		return canvas_image_;
+
+	colour_lookup.resize(1 << 24);
+	fread(&colour_lookup[0], sizeof(uint32_t), colour_lookup.size(), rgb_file);
+	fclose(rgb_file);
+
+	Colour::bgra* p_bgra = (Colour::bgra*)canvas_image_.data;
+	Colour::bgra* p_bgra_0 = p_bgra;
+	canvas_image_.occupied = 0;
+	int order = 0;
+
+	for (uint32_t y = 0; y < canvas_image_.width; ++y)
+	{
+		for (uint32_t x = 0; x < canvas_image_.width; ++x)
+		{
+			order = xy2d(12, x, y);
+			*p_colour = colour_lookup[order];
+
+			if (hist_[*p_colour])
+			{
+				p_bgra->r = colour.r;
+				p_bgra->g = colour.g;
+				p_bgra->b = colour.b;
+				p_bgra->a = 0xff;
+				canvas_image_.occupied++;
+			}
+			else
+			{
+				p_bgra->r = 0;
+				p_bgra->g = 0;
+				p_bgra->b = 0;
+			}
+
+			p_bgra++;
+		}
+	}
+
+	return canvas_image_;
+}
+
+Colour::canvas_image & RGBHistogram::hilbert_sorted_canvas()
+{
+	const uint32_t colours = canvas_image_.height * canvas_image_.width;
+	Colour::rgba colour;
+	uint32_t * p_colour;
+	p_colour = (uint32_t *)&colour;
+	colour.a = 0;
+
+
+	colour_frequency_.resize(hist_.size());
+	unsigned col = 0;
+
+	for (uint32_t red = 0; red < 256; ++red)
+	{
+		colour.r = red;
+
+		for (uint32_t green = 0; green < 256; ++green) {
+			colour.g = green;
+			for (uint32_t blue = 0; blue < 256; ++blue)
+			{
+				colour.b = blue;
+				col = *p_colour;
+				colour_frequency_[col].freq = hist_[col];
+				colour_frequency_[col].colour = col;
+			}
+		}
+	}
+
+	std::sort(colour_frequency_.begin(), colour_frequency_.end(), frequency_sort);
+
+	Colour::bgra* p_bgra = (Colour::bgra*)canvas_image_.data;
+	Colour::bgra* p_bgra_0 = p_bgra;
+	canvas_image_.occupied = 0;
+	Colour::rgba* p_rgba_out;
+
+
+	memset(p_bgra, 0, colours * sizeof(Colour::bgra));
+	int x = 0, y = 0, index = 0;
+
+	for (uint32_t c = 0; c < colours; ++c)
+	{
+		if (!colour_frequency_[c].freq)
+			break;
+
+		d2xy(12, c, x, y);
+		index = (y * canvas_image_.width) + x;
+		p_bgra = p_bgra_0 + index;
+		p_rgba_out = (Colour::rgba*)&colour_frequency_[c].colour;
+		p_bgra->r = p_rgba_out->r;
+		p_bgra->g = p_rgba_out->g;
+		p_bgra->b = p_rgba_out->b;
+		canvas_image_.occupied++;
+	}
+
+	colour_frequency_.resize(canvas_image_.occupied);
+	return canvas_image_;
 }
 
 Colour::canvas_image & RGBHistogram::canvas()
