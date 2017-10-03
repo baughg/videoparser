@@ -13,6 +13,11 @@ RGBHistogram::~RGBHistogram(void)
 {
 }
 
+bool frequency_sort(const colour_frequency &lhs, const colour_frequency &rhs)
+{
+	return lhs.freq > rhs.freq;
+}
+
 void RGBHistogram::init()
 {
 	hist_.resize(1 << 24);
@@ -187,10 +192,7 @@ Colour::canvas_image & RGBHistogram::canvas()
 	return canvas_image_;
 }
 
-bool frequency_sort(const colour_frequency &lhs, const colour_frequency &rhs)
-{
-	return lhs.freq > rhs.freq;
-}
+
 
 void RGBHistogram::save(std::string out_name)
 {
