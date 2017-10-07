@@ -32,6 +32,7 @@ protected:
 	virtual void init() = 0;
 	std::vector<uint64_t> hist_;
 	std::vector<colour_frequency> colour_frequency_;
+	std::vector<double> log_probability_;
 	std::vector<colour_group> colour_group_;
 };
 #endif

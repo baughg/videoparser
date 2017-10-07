@@ -37,17 +37,14 @@ struct VideoStreamState {
 	std::vector<uint64> frame_start;
 };
 
-enum IPA {
-	PDE,
-	INTERP
-};
+
 
 class FrameServer
 {
 public:
 	FrameServer(void);
 	~FrameServer(void);
-	int Parse(std::string _video_file, int mode = 0);
+	int Parse(std::string _video_file, int mode = 0, uint32_t select_frames = 10);
 	
 	VideoStreamState video_stream_state;
 	static void SaveFrame(AVFrame *pFrameY, AVFrame *pFrame, size_t width, size_t height, long long iFrame,FramePointer &frame_pointer,bool run_ip=false,FrameServer* server=NULL);
@@ -61,6 +58,7 @@ public:
 	
 	uint64 CurrentFrame();
 	void ReadStream(std::vector<uint64> &frame_start, int mode = 0);
+	RGBHistogram & get_global_histogram();
 private:
 	void rgb2bgr(pixel* rgb_ptr, size_t width,size_t height);
 

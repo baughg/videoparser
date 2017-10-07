@@ -19,7 +19,10 @@ size_t FrameServer::Height(){
 	return height;
 }
 
-
+RGBHistogram & FrameServer::get_global_histogram()
+{
+	return global_rgb_hist_;
+}
 
 FrameServer::~FrameServer(void)
 {
@@ -52,37 +55,32 @@ void FrameServer::InitializeBuffer() {
 	sws_ctx = nullptr;	
 }
 
-
-
-
-
-
-int FrameServer::Parse(std::string _video_file, int mode) {
+int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames) {
 	video_file = _video_file;
 
-	/*AVFormatContext *pFormatCtx = nullptr;
+	/*AVFormatContext *pFormatCtx = NULL;
 	int             i, videoStream;
-	AVCodecContext  *pCodecCtx = nullptr;
-	AVCodec         *pCodec = nullptr;
-	AVFrame         *pFrame = nullptr; 
-	AVFrame         *pFrameRGB = nullptr;
+	AVCodecContext  *pCodecCtx = NULL;
+	AVCodec         *pCodec = NULL;
+	AVFrame         *pFrame = NULL; 
+	AVFrame         *pFrameRGB = NULL;
 	AVPacket        packet;
 	int             frameFinished;
 	int             numBytes;
-	uint8_t         *buffer = nullptr;
+	uint8_t         *buffer = NULL;
 
-	AVDictionary    *optionsDict = nullptr;
-	struct SwsContext      *sws_ctx = nullptr;*/
+	AVDictionary    *optionsDict = NULL;
+	struct SwsContext      *sws_ctx = NULL;*/
 
 	// Register all formats and codecs
 	av_register_all();
 
 	// Open video file
-	if(avformat_open_input(&pFormatCtx, video_file.c_str(), nullptr, nullptr)!=0)
+	if(avformat_open_input(&pFormatCtx, video_file.c_str(), NULL, NULL)!=0)
 		return -1; // Couldn't open file
 
 	// Retrieve stream information
-	if(avformat_find_stream_info(pFormatCtx, nullptr)<0)
+	if(avformat_find_stream_info(pFormatCtx, NULL)<0)
 		return -1; // Couldn't find stream information
 
 	// Dump information about file onto standard error
@@ -103,7 +101,7 @@ int FrameServer::Parse(std::string _video_file, int mode) {
 
 		// Find the decoder for the video stream
 		pCodec=avcodec_find_decoder(pCodecCtx->codec_id);
-		if(pCodec==nullptr) {
+		if(pCodec==NULL) {
 			fprintf(stderr, "Unsupported codec!\n");
 			return -1; // Codec not found
 		}
@@ -116,7 +114,7 @@ int FrameServer::Parse(std::string _video_file, int mode) {
 
 		// Allocate an AVFrame structure
 		pFrameRGB=avcodec_alloc_frame();
-		if(pFrameRGB==nullptr)
+		if(pFrameRGB==NULL)
 			return -1;
 
 		// Determine required buffer size and allocate buffer
@@ -134,9 +132,9 @@ int FrameServer::Parse(std::string _video_file, int mode) {
 			pCodecCtx->height,
 			PIX_FMT_RGB24,
 			SWS_BILINEAR,
-			nullptr,
-			nullptr,
-			nullptr
+			NULL,
+			NULL,
+			NULL
 			);
 
 		// Assign appropriate parts of buffer to image planes in pFrameRGB
@@ -151,6 +149,7 @@ int FrameServer::Parse(std::string _video_file, int mode) {
 		//ReadStream(frame_start);
 
 		if(!mode) {
+			//Colour::canvas_image canvas_ = global_rgb_hist_.canvas();
 			Colour::canvas_image canvas_ = global_rgb_hist_.hilbert_canvas();
 			std::string file_out = "canvas.bmp";
 			WriteBitmap(file_out,canvas_.width,canvas_.height,canvas_.planes,canvas_.data);
@@ -159,12 +158,17 @@ int FrameServer::Parse(std::string _video_file, int mode) {
 			file_out = "sorted_canvas.bmp";
 			WriteBitmap(file_out,canvas_.width,canvas_.height,canvas_.planes,canvas_.data);
 			std::string hist_filename = "hist.dat";
-			global_rgb_hist_.save(hist_filename);
+			global_rgb_hist_.save(hist_filename,(uint32_t)pCodecCtx->width,(uint32_t)pCodecCtx->height);
 		}
-		//frame_start.shrink_to_fit();
+		else if(mode == 3)
+		{
+			global_rgb_hist_.select_best_frames(select_frames);
+		}
+
+		frame_start.shrink_to_fit();
 
 		frame_count = (uint64)frame_start.size();
-		//frame_start.resize(frame_count);
+		
 
 		FramePointer frame_pointer;
 		//ReadFrame(29,frame_pointer);
@@ -192,8 +196,6 @@ int FrameServer::Parse(std::string _video_file, int mode) {
 		return 0;
 
 }
-
-
 
 uint64 FrameServer::Length() {
 	return frame_count;
@@ -265,6 +267,8 @@ void FrameServer::ReadStream(std::vector<uint64> &frame_start, int mode) {
 	bool begin = true;
 	bool found_colour = false;
 	char file_name_out[256];
+	bool end_of_read = false;
+	uint32_t rank = 0;
 
 	while(av_read_frame(pFormatCtx, &packet)>=0) {
 		// Is this a packet from the video stream?
@@ -319,11 +323,30 @@ void FrameServer::ReadStream(std::vector<uint64> &frame_start, int mode) {
 						//	//WriteBitmap(file_out,canvas_.width,canvas_.height,canvas_.planes,canvas_.data);
 						//}
 					}
+					else if(mode == 3)
+					{
+						SaveFrame(pFrame,pFrameRGB, pCodecCtx->width, pCodecCtx->height, i, frame_pointer);					
+						found_colour = global_rgb_hist_.score(frame_pointer.rgb_ptr, pCodecCtx->width*pCodecCtx->height);	
+					}
+					else if(mode == 4)
+					{
+						if(global_rgb_hist_.save_this_frame(i,end_of_read, rank))
+						{
+							SaveFrame(pFrame,pFrameRGB, pCodecCtx->width, pCodecCtx->height, i, frame_pointer);
+							rgb2bgr(frame_pointer.rgb_ptr, pCodecCtx->width,pCodecCtx->height);
+							
+							sprintf(file_name_out,"dump/frame%05d_%02u.bmp",i,rank);
+							WriteBitmap(std::string(file_name_out),pCodecCtx->width,pCodecCtx->height,3,frame_pointer.rgb_ptr);
+
+							if(end_of_read)
+								break;
+						}
+					}
 					else if(!(i % 100))
 					{
 						SaveFrame(pFrame,pFrameRGB, pCodecCtx->width, pCodecCtx->height, i, frame_pointer);
 						rgb2bgr(frame_pointer.rgb_ptr, pCodecCtx->width,pCodecCtx->height);
-						sprintf(file_name_out,"dump/frame%05d.bmp",i);
+						sprintf(file_name_out,"dump\\frame%05d.bmp",i);
 						WriteBitmap(std::string(file_name_out),pCodecCtx->width,pCodecCtx->height,3,frame_pointer.rgb_ptr);
 					}
 
