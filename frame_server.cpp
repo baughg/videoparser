@@ -26,22 +26,33 @@ RGBHistogram & FrameServer::get_global_histogram()
 
 FrameServer::~FrameServer(void)
 {
+	
 	quit = true;
-	if (!buffer)
+	if (buffer == nullptr)
 		return;
 
-	av_free(buffer);
-	av_free(pFrameRGB);
+	if(buffer != nullptr)
+		av_free(buffer);
 
+	printf("free buffer\n");
+	if(pFrameRGB != nullptr)
+		av_free(pFrameRGB);
+
+	printf("free pFrameRGB\n");
 	// Free the YUV frame
-	av_free(pFrame);
+	if(pFrame != nullptr)
+		av_free(pFrame);
 
+	printf("free pFrame\n");
 	// Close the codec
-	avcodec_close(pCodecCtx);
+	if(pCodecCtx != nullptr)
+		avcodec_close(pCodecCtx);
 
+	printf("free pCodecCtx\n");
 	// Close the video file
+	if(pFormatCtx != nullptr)
 	avformat_close_input(&pFormatCtx);
-
+	printf("free pFormatCtx\n");
 }
 
 void FrameServer::InitializeBuffer() {

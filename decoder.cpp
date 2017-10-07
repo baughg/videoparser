@@ -5,36 +5,38 @@
 
 int main(int argc, char** argv)
 {
-	if(argc < 2)
+	if(argc < 3)
 	{
 		printf("decode [video]\n");
 		exit(1);		
 	}
 
 	std::string src_file = std::string(argv[1]);
-	
-	{
-		FrameServer frame_server;
-		printf("create histogram...\n");
-		if (frame_server.Parse(src_file) != 0)
+	std::string mode = std::string(argv[2]);
+	if(strcmp(mode.c_str(),"hist") == 0) {
 		{
-			printf("decode error!\n");
+			FrameServer frame_server;
+			printf("create histogram...\n");
+			if (frame_server.Parse(src_file) != 0)
+			{
+				printf("decode error!\n");
+			}
 		}
-	}
-	{
-		printf("rank frames...\n");
-		std::string hist_filename = "hist.dat";
-		FrameServer local_server;
-		RGBHistogram &global_hist = local_server.get_global_histogram();
-		global_hist.load(hist_filename);
-		global_hist.init_frame_scoring();		
+		{
+			printf("rank frames...\n");
+			std::string hist_filename = "hist.dat";
+			FrameServer local_server;
+			RGBHistogram &global_hist = local_server.get_global_histogram();
+			global_hist.load(hist_filename);
+			global_hist.init_frame_scoring();		
 
-		if (local_server.Parse(src_file, 3) != 0)
-		{
-			printf("decode error!\n");
+			if (local_server.Parse(src_file, 3) != 0)
+			{
+				printf("decode error!\n");
+			}
 		}
-	}
-	
+	} 
+	else if(strcmp(mode.c_str(),"thumb") == 0)
 	{
 		printf("write selected frames...\n");
 		FrameServer local_server;			
