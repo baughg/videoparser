@@ -34,25 +34,25 @@ FrameServer::~FrameServer(void)
 	if(buffer != nullptr)
 		av_free(buffer);
 
-	printf("free buffer\n");
+	//printf("free buffer\n");
 	if(pFrameRGB != nullptr)
 		av_free(pFrameRGB);
 
-	printf("free pFrameRGB\n");
+	//printf("free pFrameRGB\n");
 	// Free the YUV frame
 	if(pFrame != nullptr)
 		av_free(pFrame);
 
-	printf("free pFrame\n");
+	//printf("free pFrame\n");
 	// Close the codec
 	if(pCodecCtx != nullptr)
 		avcodec_close(pCodecCtx);
 
-	printf("free pCodecCtx\n");
+	//printf("free pCodecCtx\n");
 	// Close the video file
 	if(pFormatCtx != nullptr)
 	avformat_close_input(&pFormatCtx);
-	printf("free pFormatCtx\n");
+	//printf("free pFormatCtx\n");
 }
 
 void FrameServer::InitializeBuffer() {
