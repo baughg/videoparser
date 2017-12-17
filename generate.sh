@@ -8,3 +8,6 @@ vdecoder hist $1
 vdecoder rank $1
 mkdir dump
 vdecoder thumb $1
+vdecoder face $1
+chmod +x face_detection.sh
+./face_detection.sh
