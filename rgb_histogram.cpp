@@ -560,6 +560,7 @@ bool RGBHistogram::generate_face_detection_script(std::string model_file)
 	}
 
 	face_detection.close();
+	return true;
 }
 
 bool  RGBHistogram::save_frame_rank()
