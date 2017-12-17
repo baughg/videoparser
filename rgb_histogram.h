@@ -82,6 +82,7 @@ public:
 	Colour::canvas_image & hilbert_sorted_canvas();
 	Colour::canvas_image & make_colour_groups();
 	bool save_this_frame(const uint32_t &frame, bool &end_read, uint32_t &rank);
+	bool generate_face_detection_script(std::string model_file);
 protected:
 	bool save_frame_rank();
 	bool load_frame_rank();

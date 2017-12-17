@@ -49,5 +49,16 @@ int main(int argc, char** argv)
 			printf("decode error!\n");
 		}
 	}
+	else if(strcmp(mode.c_str(),"face") == 0)
+	{
+		printf("face detection on selected frames...\n");
+		FrameServer local_server;			
+		RGBHistogram &global_hist = local_server.get_global_histogram();
+		global_hist.init_frame_selection();		
+
+		if(!global_hist.generate_face_detection_script("seeta_fd_frontal_v1.0.bin"))		
+			printf("face detection script error!\n");
+		
+	}
 	return 0;
 }

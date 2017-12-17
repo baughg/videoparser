@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <algorithm>
+#include <fstream>
 
 RGBHistogram::RGBHistogram(void)
 {
@@ -535,6 +536,31 @@ bool  RGBHistogram::load_frame_rank()
 	return false;
 }
 
+bool RGBHistogram::generate_face_detection_script(std::string model_file)
+{
+	const size_t sample_frames = frame_ranks_.size();
+	char file_name_out[256];
+
+	if(!sample_frames)
+		return false;
+
+	std::string face_detect_file = "face_detection.";
+
+#ifdef _WIN32
+	face_detect_file.append("bat");
+#else
+	face_detect_file.append("sh");
+#endif
+
+	std::ofstream face_detection(face_detect_file.c_str());
+
+	for(size_t fr = 0; fr < sample_frames; ++fr) {
+		sprintf(file_name_out,"dump/frame%05d_%02u.bmp",frame_ranks_[fr].frame,frame_ranks_[fr].rank);
+		face_detection << "facedetect " << file_name_out << " " << model_file << std::endl;
+	}
+
+	face_detection.close();
+}
 
 bool  RGBHistogram::save_frame_rank()
 {
