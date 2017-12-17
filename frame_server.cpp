@@ -96,7 +96,7 @@ int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames
 
 	// Dump information about file onto standard error
 	av_dump_format(pFormatCtx, 0, video_file.c_str(), 0);
-
+	int frame_data_size = 0;
 	// Find the first video stream
 	videoStream=-1;
 	for(size_t i=0; i<pFormatCtx->nb_streams; i++)
@@ -148,6 +148,7 @@ int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames
 			NULL
 			);
 
+			frame_data_size = pCodecCtx->width * pCodecCtx->height * 3;
 		// Assign appropriate parts of buffer to image planes in pFrameRGB
 		// Note that pFrameRGB is an AVFrame, but AVFrame is a superset
 		// of AVPicture
@@ -173,6 +174,12 @@ int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames
 		}
 		else if(mode == 3)
 		{
+			if(frame_data_size >= 11520000)
+			{
+				select_frames = 50;
+				printf("Select frame set to 50! [%dx%d]\n",pCodecCtx->width, pCodecCtx->height);
+			}
+
 			global_rgb_hist_.select_best_frames(select_frames);
 		}
 

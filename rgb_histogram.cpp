@@ -473,10 +473,16 @@ void RGBHistogram::select_best_frames(const uint32_t frames_chosen)
 	int32_t end_barrier = 0;
 	const int32_t max_barrier_frame = (int)histogram_file_header_.frames - 1;
 	uint32_t cur_frame = 0;
-
+	uint32_t start_gap = histogram_file_header_.frames >> 5;
+	uint32_t end_gap = histogram_file_header_.frames - start_gap;
+	printf("frame barrier: %u of %u\n", start_gap, histogram_file_header_.frames);
+	
 	for(uint32_t fr = 0; fr < histogram_file_header_.frames; ++fr)
 	{		
 		cur_frame = frame_scores_[fr].frame;
+
+		if(cur_frame <= start_gap || cur_frame >= end_gap)
+			continue;
 
 		if(!frame_barrier[cur_frame])
 		{

@@ -1,1 +1,7 @@
 sudo apt-get install libavcodec-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev
+
+hist
+rank
+thumb
+
+

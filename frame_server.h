@@ -44,7 +44,7 @@ class FrameServer
 public:
 	FrameServer(void);
 	~FrameServer(void);
-	int Parse(std::string _video_file, int mode = 0, uint32_t select_frames = 15);
+	int Parse(std::string _video_file, int mode = 0, uint32_t select_frames = 150);
 	
 	VideoStreamState video_stream_state;
 	static void SaveFrame(AVFrame *pFrameY, AVFrame *pFrame, size_t width, size_t height, long long iFrame,FramePointer &frame_pointer,bool run_ip=false,FrameServer* server=NULL);
