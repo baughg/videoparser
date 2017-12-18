@@ -176,8 +176,11 @@ void RGBHistogram::init_frame_scoring()
 void RGBHistogram::init_frame_selection()
 {
 	load_frame_rank();
+	load_frame_rank(true);
 	frame_no_ = 0;
+	frame_no_thumb_ = 0;
 	select_frame_count_ = (uint32_t)frame_ranks_.size();
+	select_frame_count_thumb_ = (uint32_t)frame_ranks_thumb_.size();
 }
 
 bool RGBHistogram::save_this_frame(const uint32_t &frame, bool &end_read, uint32_t &rank)
@@ -198,6 +201,28 @@ bool RGBHistogram::save_this_frame(const uint32_t &frame, bool &end_read, uint32
 	}
 
 	end_read = frame_no_ >= select_frame_count_;
+		
+	return found;
+}
+
+bool RGBHistogram::save_this_frame_thumb(const uint32_t &frame, bool &end_read, uint32_t &rank)
+{
+	bool found = false;
+	
+	if(frame_no_thumb_ >= select_frame_count_thumb_)
+	{
+		end_read = true;
+		return false;
+	}
+
+	if(frame_ranks_thumb_[frame_no_].frame == frame)
+	{
+		rank = frame_ranks_thumb_[frame_no_].rank;
+		frame_no_thumb_++;
+		found = true;
+	}
+
+	end_read = frame_no_thumb_ >= select_frame_count_thumb_;
 		
 	return found;
 }
@@ -521,19 +546,97 @@ void RGBHistogram::select_best_frames(const uint32_t frames_chosen)
 	save_frame_rank();
 }
 
-bool  RGBHistogram::load_frame_rank()
+void RGBHistogram::select_best_frames_thumb(const uint32_t frames_chosen)
+{
+	if(!frames_chosen)
+		return;
+
+	std::sort(frame_scores_.begin(),frame_scores_.end(),sort_by_score);
+	uint32_t last_frame = ~0;
+	uint32_t frame_distance = 0;
+	const uint32_t frame_gap = histogram_file_header_.frames / frames_chosen;
+	const int32_t half_gap = (int)frame_gap >> 1;
+
+	frame_selected_thumb_.resize(frames_chosen);
+	uint32_t selected = 0;
+	std::vector<uint32_t> frame_barrier(histogram_file_header_.frames);
+	int32_t start_barrier = 0;
+	int32_t end_barrier = 0;
+	const int32_t max_barrier_frame = (int)histogram_file_header_.frames - 1;
+	uint32_t cur_frame = 0;
+	uint32_t start_gap = histogram_file_header_.frames >> 5;
+	uint32_t end_gap = histogram_file_header_.frames - start_gap;
+	printf("frame barrier thumb: %u of %u\n", start_gap, histogram_file_header_.frames);
+	
+	for(uint32_t fr = 0; fr < histogram_file_header_.frames; ++fr)
+	{		
+		cur_frame = frame_ranks_thumb_[fr].frame;
+
+		if(cur_frame <= start_gap || cur_frame >= end_gap)
+			continue;
+
+		if(!frame_barrier[cur_frame])
+		{
+			
+			last_frame = cur_frame;
+			frame_selected_thumb_[selected].frame = cur_frame;
+			frame_selected_thumb_[selected].score = frame_scores_[fr].score;
+
+			start_barrier = (int)last_frame - half_gap;
+			end_barrier = (int)last_frame + half_gap;
+
+			start_barrier = start_barrier > 0 ? start_barrier : 0;
+			end_barrier = end_barrier < max_barrier_frame ? end_barrier : max_barrier_frame;
+
+			memset(&frame_barrier[start_barrier],0xff,sizeof(uint32_t)*(end_barrier-start_barrier+1));
+			selected++;
+
+			if(selected >= frames_chosen)
+				break;
+		}
+	}
+
+	frame_ranks_thumb_.resize(selected);
+
+	for(uint32_t f = 0; f < selected; ++f)
+	{
+		frame_ranks_thumb_[f].rank = f+1;
+		frame_ranks_thumb_[f].frame = frame_selected_thumb_[f].frame;
+	} 
+
+	std::sort(frame_ranks_thumb_.begin(),frame_ranks_thumb_.end(),sort_by_frame_no);
+	save_frame_rank(true);
+}
+
+bool  RGBHistogram::load_frame_rank(bool thumb)
 {
 	FILE* frame_rank_file = nullptr;
 	uint32_t frames = 0;
-	frame_rank_file = fopen("frame_rank.dat","rb");
-	
-	if(frame_rank_file)
+
+	if(!thumb) {
+		frame_rank_file = fopen("frame_rank.dat","rb");
+
+		if(frame_rank_file)
+		{
+			fread(&frames,sizeof(frames),1,frame_rank_file);
+			frame_ranks_.resize(frames);
+			fread(&frame_ranks_[0],sizeof(Colour::frame_rank),frames,frame_rank_file);
+			fclose(frame_rank_file);
+			return true;
+		}
+	}
+	else
 	{
-		fread(&frames,sizeof(frames),1,frame_rank_file);
-		frame_ranks_.resize(frames);
-		fread(&frame_ranks_[0],sizeof(Colour::frame_rank),frames,frame_rank_file);
-		fclose(frame_rank_file);
-		return true;
+		frame_rank_file = fopen("frame_rank_thumb.dat","rb");
+
+		if(frame_rank_file)
+		{
+			fread(&frames,sizeof(frames),1,frame_rank_file);
+			frame_ranks_thumb_.resize(frames);
+			fread(&frame_ranks_thumb_[0],sizeof(Colour::frame_rank),frames,frame_rank_file);
+			fclose(frame_rank_file);
+			return true;
+		}
 	}
 
 	return false;
@@ -687,18 +790,34 @@ bool RGBHistogram::extract_face_bitmaps()
 	return true;
 }
 
-bool  RGBHistogram::save_frame_rank()
+bool  RGBHistogram::save_frame_rank(bool thumb)
 {
 	FILE* frame_rank_file = nullptr;
-	uint32_t frames = (uint32_t)frame_ranks_.size();
-	frame_rank_file = fopen("frame_rank.dat","wb");
 	
-	if(frame_rank_file)
-	{
-		fwrite(&frames,sizeof(frames),1,frame_rank_file);
-		fwrite(&frame_ranks_[0],sizeof(Colour::frame_rank),frames,frame_rank_file);
-		fclose(frame_rank_file);
-		return true;
+
+	if(!thumb) {
+		frame_rank_file = fopen("frame_rank.dat","wb");
+		uint32_t frames = (uint32_t)frame_ranks_.size();
+
+		if(frame_rank_file)
+		{
+			fwrite(&frames,sizeof(frames),1,frame_rank_file);
+			fwrite(&frame_ranks_[0],sizeof(Colour::frame_rank),frames,frame_rank_file);
+			fclose(frame_rank_file);
+			return true;
+		}
+	}
+	else {
+		frame_rank_file = fopen("frame_rank_thumb.dat","wb");
+		uint32_t frames = (uint32_t)frame_ranks_thumb_.size();
+
+		if(frame_rank_file)
+		{
+			fwrite(&frames,sizeof(frames),1,frame_rank_file);
+			fwrite(&frame_ranks_thumb_[0],sizeof(Colour::frame_rank),frames,frame_rank_file);
+			fclose(frame_rank_file);
+			return true;
+		}
 	}
 
 	return false;
