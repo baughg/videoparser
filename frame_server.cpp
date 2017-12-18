@@ -487,7 +487,7 @@ void FrameServer::ReadBitmap(std::string filename,int &width, int &height, int &
 	PP_DWORD ColorsUsed;
 	PP_DWORD ColorsImportant;
 
-	fopen_s(&bitmapFile,filename.c_str(),"rb");
+	bitmapFile = fopen(filename.c_str(),"rb");
 	fread((void*)&Type,sizeof(PP_WORD),1,bitmapFile);
 	fread((void*)&Size,sizeof(PP_DWORD),1,bitmapFile);
 	fread((void*)&Reserved,sizeof(PP_DWORD),1,bitmapFile);
