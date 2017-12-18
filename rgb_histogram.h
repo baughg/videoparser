@@ -69,6 +69,7 @@ typedef struct facebox
 	unsigned y;
 	unsigned width;
 	unsigned height;
+	float score;
 }facebox;
 
 typedef struct face_crop

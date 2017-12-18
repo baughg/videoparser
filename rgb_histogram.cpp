@@ -761,7 +761,7 @@ bool RGBHistogram::extract_face_bitmaps()
 			for(uint32_t f = 0; f < faces; ++f)
 			{
 				get_image_crop(boxes[f],width,height,face_bitmap,frame_bitmap,crop_width,crop_height);
-				sprintf(file_name_out,"face/%05u.bmp",face_index);	
+				sprintf(file_name_out,"face/%05u_%f.bmp",face_index, boxes[f].score);	
 				FrameServer::WriteBitmap(std::string(file_name_out),crop_width,crop_height,3,&face_bitmap[0]);
 				fcrop.frame = frame_ranks_[fr].frame;
 				fcrop.index = face_index;
