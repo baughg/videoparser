@@ -399,7 +399,7 @@ void FrameServer::rgb2bgr(pixel* rgb_ptr, size_t width,size_t height)
 #define PP_WORD short
 #define PP_DWORD int
 
-void FrameServer::WriteBitmap(std::string filename,int _width,int _height,int planes,unsigned char* dataPtr)
+void FrameServer::WriteBitmap(std::string filename,int _width,int _height,int planes,uint8_t* dataPtr)
 {
 	FILE* bitmapFile;
 	PP_WORD Type=19778;
@@ -419,7 +419,7 @@ void FrameServer::WriteBitmap(std::string filename,int _width,int _height,int pl
 	PP_DWORD ColorsImportant = 0;
 
 	int stride = Width*(BitsPerPixel/8);
-	int bytesPerLine = Width*(BitsPerPixel/8)*sizeof(unsigned char);
+	int bytesPerLine = Width*(BitsPerPixel/8)*sizeof(uint8_t);
 	int pad = stride % 4;
 
 
@@ -430,7 +430,7 @@ void FrameServer::WriteBitmap(std::string filename,int _width,int _height,int pl
 
 	SizeImage = stride*Height;
 	Size = SizeImage + Offset;
-	unsigned char* writeBuffer = new unsigned char[stride];
+	uint8_t* writeBuffer = new uint8_t[stride];
 
 	bitmapFile = fopen(filename.c_str(),"wb");
 
@@ -455,12 +455,12 @@ void FrameServer::WriteBitmap(std::string filename,int _width,int _height,int pl
 
 	int pixelCount = _width*_height*planes;
 
-	unsigned char* linePtr = dataPtr+((Height-1)*bytesPerLine);
-	//fwrite((void*)dataPtr,sizeof(unsigned char),pixelCount,bitmapFile);
+	uint8_t* linePtr = dataPtr+((Height-1)*bytesPerLine);
+	//fwrite((void*)dataPtr,sizeof(uint8_t),pixelCount,bitmapFile);
 	for(int row = 0; row < Height; row++)
 	{
 		memcpy((void*)writeBuffer,(const void*)linePtr,bytesPerLine);		
-		fwrite((void*)linePtr,sizeof(unsigned char),stride,bitmapFile);
+		fwrite((void*)linePtr,sizeof(uint8_t),stride,bitmapFile);
 		linePtr -= bytesPerLine;
 	}
 
@@ -468,3 +468,72 @@ void FrameServer::WriteBitmap(std::string filename,int _width,int _height,int pl
 	fclose(bitmapFile);
 }
 
+void FrameServer::ReadBitmap(std::string filename,int &width, int &height, int &planes, std::vector<uint8_t> &bitmap_image)
+{
+	FILE* bitmapFile;
+	PP_WORD Type;
+	PP_DWORD Size;
+	PP_DWORD Reserved;
+	PP_DWORD Offset;
+	PP_DWORD headerSize;
+	PP_DWORD Width;
+	PP_DWORD Height;
+	PP_WORD Planes;
+	PP_WORD BitsPerPixel;
+	PP_DWORD Compression;
+	PP_DWORD SizeImage;
+	PP_DWORD XPixelsPerMeter;
+	PP_DWORD YPixelsPerMeter;
+	PP_DWORD ColorsUsed;
+	PP_DWORD ColorsImportant;
+
+	fopen_s(&bitmapFile,filename.c_str(),"rb");
+	fread((void*)&Type,sizeof(PP_WORD),1,bitmapFile);
+	fread((void*)&Size,sizeof(PP_DWORD),1,bitmapFile);
+	fread((void*)&Reserved,sizeof(PP_DWORD),1,bitmapFile);
+	fread((void*)&Offset,sizeof(PP_DWORD),1,bitmapFile);
+	fread((void*)&headerSize,sizeof(PP_DWORD),1,bitmapFile);
+	fread((void*)&Width,sizeof(PP_DWORD),1,bitmapFile);
+	fread((void*)&Height,sizeof(PP_DWORD),1,bitmapFile);
+	fread((void*)&Planes,sizeof(PP_WORD),1,bitmapFile);
+	fread((void*)&BitsPerPixel,sizeof(PP_WORD),1,bitmapFile);
+	fread((void*)&Compression,sizeof(PP_DWORD),1,bitmapFile);
+	fread((void*)&SizeImage,sizeof(PP_DWORD),1,bitmapFile);
+
+	fread((void*)&XPixelsPerMeter,sizeof(PP_DWORD),1,bitmapFile);
+	fread((void*)&YPixelsPerMeter,sizeof(PP_DWORD),1,bitmapFile);
+	fread((void*)&ColorsUsed,sizeof(PP_DWORD),1,bitmapFile);
+	fread((void*)&ColorsImportant,sizeof(PP_DWORD),1,bitmapFile);
+
+
+	width = Width;
+	height = Height;
+	planes = BitsPerPixel/8;
+
+	int stride = Width*(BitsPerPixel>>3);
+	int bytesPerLine = Width*(BitsPerPixel>>3)*sizeof(uint8_t);
+	int pad = stride % 4;
+
+	bitmap_image.resize(bytesPerLine*Height);
+	uint8_t* dataPtr = &bitmap_image[0];
+
+	if(pad != 0)
+	{
+		stride+=(4 - pad);
+	}
+	std::vector<uint8_t> buffer(stride);
+	uint8_t* readBuffer = &buffer[0];
+
+	fseek(bitmapFile,Offset,SEEK_SET);
+	
+	uint8_t* linePtr = dataPtr+((Height-1)*bytesPerLine);
+	//fwrite((void*)dataPtr,sizeof(uint8_t),pixelCount,bitmapFile);
+	for(int row = 0; row < Height; row++)
+	{
+		fread((void*)readBuffer,sizeof(uint8_t),stride,bitmapFile);
+		memcpy((void*)linePtr,(const void*)readBuffer,bytesPerLine);
+		linePtr -= bytesPerLine;
+	}
+
+	fclose(bitmapFile);	
+}

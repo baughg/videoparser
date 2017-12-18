@@ -5,6 +5,9 @@
 #include <string.h>
 #include <algorithm>
 #include <fstream>
+#include "frame_server.h"
+
+
 
 RGBHistogram::RGBHistogram(void)
 {
@@ -560,6 +563,127 @@ bool RGBHistogram::generate_face_detection_script(std::string model_file)
 	}
 
 	face_detection.close();
+	return true;
+}
+
+void RGBHistogram::get_image_crop(
+	facebox &box, 
+	int &width, 
+	int &height, 
+	std::vector<uint8_t> &crop_image, 
+	std::vector<uint8_t> &full_image,
+	int &crop_width,
+	int &crop_height)
+{
+	int img_stride = width * 3;
+	int width_border = box.width >> 1;
+	int height_border = box.height >> 1;
+
+	int x1 = box.x - width_border;
+	int x2 = box.x + box.width + width_border;
+
+	int y1 = box.y - width_border;
+	int y2 = box.y + box.height + height_border;
+
+	x1 = x1 > 0 ? x1 : 0;
+	y1 = y1 > 0 ? y1 : 0;
+
+	x2 = x2 >= width ? (width - 1) : x2;
+	y2 = y2 >= height ? (height - 1) : y2;
+
+	crop_width = x2 - x1 + 1;
+	crop_height = y2 - y1 + 1;
+
+	crop_image.resize(crop_width*crop_height*3);
+
+	uint8_t* p_image = &full_image[0];
+	uint8_t* p_crop_image = &crop_image[0];
+
+	p_image += (x1*3);
+	p_image += (y1 * img_stride);
+	int crop_stride = crop_width * 3;
+
+	for(int y = y1; y <= y2; ++y)
+	{
+		memcpy(p_crop_image,p_image,crop_stride);
+		p_crop_image += crop_stride;
+		p_image += img_stride;
+	}
+}
+
+bool sort_by_pixels(face_crop &lhs, face_crop &rhs)
+{
+	return lhs.pixels > rhs.pixels;
+}
+
+bool RGBHistogram::extract_face_bitmaps()
+{
+	const size_t sample_frames = frame_ranks_.size();
+	char file_name_out[256];
+
+	if(!sample_frames)
+		return false;
+
+	FILE* result_file = NULL;
+	std::string face_detection_result_file;
+	uint32_t faces = 0;
+	std::vector<facebox> boxes;
+	std::vector<uint8_t> face_bitmap;
+	int width = 0, height = 0, planes = 0;
+	std::vector<uint8_t> frame_bitmap;
+	uint32_t face_index = 1;
+	int crop_width = 0, crop_height = 0;
+	std::vector<face_crop> face_crops;
+	face_crops.reserve(sample_frames << 2);
+	face_crop fcrop;
+
+	for(size_t fr = 0; fr < sample_frames; ++fr) {
+		sprintf(file_name_out,"dump/frame%05d_%02u.bmp",frame_ranks_[fr].frame,frame_ranks_[fr].rank);		
+		face_detection_result_file = std::string(file_name_out);
+		face_detection_result_file.append(".face");
+
+		result_file = NULL;
+
+		result_file = fopen(face_detection_result_file.c_str(),"rb");
+
+		if(result_file)
+		{
+			fread(&faces,sizeof(uint32_t),1,result_file);
+			boxes.resize(faces);
+			fread(&boxes[0],sizeof(facebox),faces,result_file);
+			fclose(result_file);
+
+			FrameServer::ReadBitmap(std::string(file_name_out),width,height,planes,frame_bitmap);
+
+			for(uint32_t f = 0; f < faces; ++f)
+			{
+				get_image_crop(boxes[f],width,height,face_bitmap,frame_bitmap,crop_width,crop_height);
+				sprintf(file_name_out,"face/%05u.bmp",face_index);	
+				FrameServer::WriteBitmap(std::string(file_name_out),crop_width,crop_height,3,&face_bitmap[0]);
+				fcrop.frame = frame_ranks_[fr].frame;
+				fcrop.index = face_index;
+				fcrop.pixels = crop_width * crop_height;
+				fcrop.width = (unsigned)crop_width;
+				fcrop.height = (unsigned)crop_height;
+				face_crops.push_back(fcrop);
+				face_index++;
+			}
+		}
+	}
+
+	unsigned crop_img_count = (unsigned)face_crops.size();
+
+	FILE* crop_info_file = NULL;
+
+	crop_info_file = fopen("face/face_info.dat","wb");
+
+	if(crop_info_file)
+	{
+		std::sort(face_crops.begin(),face_crops.end(),sort_by_pixels);
+		fwrite(&crop_img_count,sizeof(crop_img_count),1,crop_info_file);
+		fwrite(&face_crops[0],sizeof(face_crop),crop_img_count,crop_info_file);
+		fclose(crop_info_file);
+	}
 	return true;
 }
 

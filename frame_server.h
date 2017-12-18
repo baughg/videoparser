@@ -49,7 +49,7 @@ public:
 	VideoStreamState video_stream_state;
 	static void SaveFrame(AVFrame *pFrameY, AVFrame *pFrame, size_t width, size_t height, long long iFrame,FramePointer &frame_pointer,bool run_ip=false,FrameServer* server=NULL);
 	static void WriteBitmap(std::string filename,int _width,int _height,int planes,unsigned char* dataPtr);	
-	
+	static void ReadBitmap(std::string filename,int &width, int &height, int &planes, std::vector<uint8_t> &bitmap_image);
 	bool quit;
 	size_t Width();
 	size_t Height();

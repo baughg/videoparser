@@ -60,5 +60,16 @@ int main(int argc, char** argv)
 			printf("face detection script error!\n");
 		
 	}
+	else if(strcmp(mode.c_str(),"facepull") == 0)
+	{
+		printf("face extraction on selected frames...\n");
+		FrameServer local_server;			
+		RGBHistogram &global_hist = local_server.get_global_histogram();
+		global_hist.init_frame_selection();		
+
+		if(!global_hist.extract_face_bitmaps())		
+			printf("face extraction script error!\n");
+		
+	}
 	return 0;
 }

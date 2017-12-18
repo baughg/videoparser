@@ -63,6 +63,23 @@ namespace Colour
 	}frame_rank;
 }
 
+typedef struct facebox
+{
+	unsigned x;
+	unsigned y;
+	unsigned width;
+	unsigned height;
+}facebox;
+
+typedef struct face_crop
+{	
+	unsigned width;
+	unsigned height;
+	unsigned frame;
+	unsigned index;
+	unsigned pixels;
+}face_crop;
+
 class RGBHistogram :	public Histogram
 {
 public:
@@ -83,6 +100,14 @@ public:
 	Colour::canvas_image & make_colour_groups();
 	bool save_this_frame(const uint32_t &frame, bool &end_read, uint32_t &rank);
 	bool generate_face_detection_script(std::string model_file);
+	bool extract_face_bitmaps();
+	void get_image_crop(facebox &box, 
+		int &width, 
+		int &height, 
+		std::vector<uint8_t> &crop_image, 
+		std::vector<uint8_t> &full_image,
+		int &crop_width,
+		int &crop_height);
 protected:
 	bool save_frame_rank();
 	bool load_frame_rank();
