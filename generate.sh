@@ -5,6 +5,7 @@ rm -rf face
 rm hist.dat
 rm *.bmp
 rm frame_rank.dat
+rm frame_rank_thumb.dat
 rm face_detection.sh
 echo running $1
 vdecoder hist $1
