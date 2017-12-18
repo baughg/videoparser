@@ -38,6 +38,7 @@ struct VideoStreamState {
 };
 
 
+#define THUMBNAIL_SELECT 10
 
 class FrameServer
 {

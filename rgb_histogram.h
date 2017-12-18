@@ -91,6 +91,7 @@ public:
 	void load(std::string out_name);
 	void clear();
 	void select_best_frames(const uint32_t frames_chosen);
+	void select_best_frames_thumb(const uint32_t frames_chosen);
 	void init_frame_scoring();
 	void init_frame_selection();
 	Colour::canvas_image & canvas();
@@ -99,6 +100,7 @@ public:
 	Colour::canvas_image & hilbert_sorted_canvas();
 	Colour::canvas_image & make_colour_groups();
 	bool save_this_frame(const uint32_t &frame, bool &end_read, uint32_t &rank);
+	bool save_this_frame_thumb(const uint32_t &frame, bool &end_read, uint32_t &rank);
 	bool generate_face_detection_script(std::string model_file);
 	bool extract_face_bitmaps();
 	void get_image_crop(facebox &box, 
@@ -109,8 +111,8 @@ public:
 		int &crop_width,
 		int &crop_height);
 protected:
-	bool save_frame_rank();
-	bool load_frame_rank();
+	bool save_frame_rank(bool thumb=false);
+	bool load_frame_rank(bool thumb=false);
 	void log_probability();
 	void init();
 	std::vector<uint32_t> canvas_data_;
@@ -118,11 +120,15 @@ protected:
 	Colour::histogram_file_header histogram_file_header_;
 	std::vector<Colour::frame_score> frame_scores_;
 	std::vector<Colour::frame_score> frame_selected_;
+	std::vector<Colour::frame_score> frame_selected_thumb_;
 	uint32_t frame_no_;
+	uint32_t frame_no_thumb_;
 	uint32_t select_frame_count_;
+	uint32_t select_frame_count_thumb_;
 	uint32_t score_width_;
 	uint32_t score_height_;
 	std::vector<Colour::frame_rank> frame_ranks_;
+	std::vector<Colour::frame_rank> frame_ranks_thumb_;
 };
 #endif
 

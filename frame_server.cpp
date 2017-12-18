@@ -181,6 +181,7 @@ int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames
 			}
 
 			global_rgb_hist_.select_best_frames(select_frames);
+			global_rgb_hist_.select_best_frames_thumb((unsigned)THUMBNAIL_SELECT);
 		}
 
 		frame_start.shrink_to_fit();
@@ -286,6 +287,8 @@ void FrameServer::ReadStream(std::vector<uint64> &frame_start, int mode) {
 	bool found_colour = false;
 	char file_name_out[256];
 	bool end_of_read = false;
+	bool end_of_read_thumb = false;
+	bool converted = false;
 	uint32_t rank = 0;
 
 	while(av_read_frame(pFormatCtx, &packet)>=0) {
@@ -348,15 +351,31 @@ void FrameServer::ReadStream(std::vector<uint64> &frame_start, int mode) {
 					}
 					else if(mode == 4)
 					{
+						converted = false;
+
 						if(global_rgb_hist_.save_this_frame(i,end_of_read, rank))
 						{
 							SaveFrame(pFrame,pFrameRGB, pCodecCtx->width, pCodecCtx->height, i, frame_pointer);
 							rgb2bgr(frame_pointer.rgb_ptr, pCodecCtx->width,pCodecCtx->height);
-							
+							converted = true;
 							sprintf(file_name_out,"dump/frame%05d_%02u.bmp",i,rank);
 							WriteBitmap(std::string(file_name_out),pCodecCtx->width,pCodecCtx->height,3,frame_pointer.rgb_ptr);
 
-							if(end_of_read)
+							if(end_of_read && end_of_read_thumb)
+								break;
+						}
+
+						if(global_rgb_hist_.save_this_frame_thumb(i,end_of_read_thumb, rank))
+						{
+							if(!converted) {
+								SaveFrame(pFrame,pFrameRGB, pCodecCtx->width, pCodecCtx->height, i, frame_pointer);
+								rgb2bgr(frame_pointer.rgb_ptr, pCodecCtx->width,pCodecCtx->height);
+							}
+
+							sprintf(file_name_out,"dumpt/frame%05d_%02u.bmp",i,rank);
+							WriteBitmap(std::string(file_name_out),pCodecCtx->width,pCodecCtx->height,3,frame_pointer.rgb_ptr);
+
+							if(end_of_read && end_of_read_thumb)
 								break;
 						}
 					}
