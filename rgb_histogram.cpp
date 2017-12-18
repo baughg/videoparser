@@ -215,9 +215,9 @@ bool RGBHistogram::save_this_frame_thumb(const uint32_t &frame, bool &end_read, 
 		return false;
 	}
 
-	if(frame_ranks_thumb_[frame_no_].frame == frame)
+	if(frame_ranks_thumb_[frame_no_thumb_].frame == frame)
 	{
-		rank = frame_ranks_thumb_[frame_no_].rank;
+		rank = frame_ranks_thumb_[frame_no_thumb_].rank;
 		frame_no_thumb_++;
 		found = true;
 	}
@@ -570,7 +570,7 @@ void RGBHistogram::select_best_frames_thumb(const uint32_t frames_chosen)
 	
 	for(uint32_t fr = 0; fr < histogram_file_header_.frames; ++fr)
 	{		
-		cur_frame = frame_ranks_thumb_[fr].frame;
+		cur_frame = frame_scores_[fr].frame;
 
 		if(cur_frame <= start_gap || cur_frame >= end_gap)
 			continue;
