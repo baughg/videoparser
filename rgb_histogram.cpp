@@ -890,7 +890,7 @@ bool RGBHistogram::score(uint8_t* rgb_ptr, uint32_t count)
 
 	intensity /= (score_height_*score_width_*3);
 
-	if(intensity < 10)
+	if(intensity < 50)
 	{
 		colour_grad = 0ULL;
 	}
