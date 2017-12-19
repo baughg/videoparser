@@ -942,18 +942,29 @@ bool RGBHistogram::select_final_faces()
 			FrameServer::ReadBitmap(std::string(file_name_in),width,height,planes,frame_bitmap);
 			FrameServer::WriteBitmap(std::string(file_name_out),width,height,planes,&frame_bitmap[0]);
 			
-
+			if(face_crops[f].width >= face_crops[f].height) {
 				exec_script 
 				<< "ffmpeg -i "
 				<< file_name_out
-				<< " -vf scale=256:-1 " 
+				<< " -vf scale=256:-2 " 
 				<< "temp.png" 
 				<< std::endl;
+			}
+			else
+			{
+				exec_script 
+				<< "ffmpeg -i "
+				<< file_name_out
+				<< " -vf scale=-2:256 " 
+				<< "temp.png" 
+				<< std::endl;
+			}
+
 
 			exec_script 
 				<< "ffmpeg -i "
 				<< "temp.png"
-				<< " -filter:v \"scale=iw:ih, pad=256:256:(256-iw)/2:(256-ih)/2\" " 
+				<< " -filter:v \"pad=256:256:(256-iw)/2:(256-ih)/2\" " 
 				<< file_name_png 
 				<< std::endl;
 
