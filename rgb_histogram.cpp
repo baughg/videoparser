@@ -834,6 +834,15 @@ bool RGBHistogram::make_face_album()
 		
 		album_height <<= 8;
 		album_width <<= 8;
+		bool no_faces = false;
+
+		if(!album_height || !album_width)
+		{
+			no_faces = true;
+			album_height = 16;
+			album_width = 16;
+		}
+
 		album_bitmap.resize(album_height * album_width * 3);
 		uint8_t* p_album_bitmap = &album_bitmap[0];
 		uint32_t x_offset = 0, y_offset = 0;
@@ -867,7 +876,8 @@ bool RGBHistogram::make_face_album()
 			face_index++;		
 		}
 
-		exec_script << "ffmpeg -i face_album.bmp face_album.png" << std::endl;
+		if(!no_faces) {
+			exec_script << "ffmpeg -i face_album.bmp face_album.png" << std::endl;
 
 #ifdef _WIN32
 			exec_script << "del face_album.bmp" << std::endl;
@@ -875,7 +885,8 @@ bool RGBHistogram::make_face_album()
 			exec_script << "rm face_album.bmp" << std::endl;
 #endif
 
-		FrameServer::WriteBitmap("face_album.bmp",album_width,album_height,3,p_album_bitmap);
+			FrameServer::WriteBitmap("face_album.bmp",album_width,album_height,3,p_album_bitmap);
+		}
 		exec_script.close();		
 		return true;
 	}
