@@ -766,6 +766,7 @@ bool RGBHistogram::extract_face_bitmaps()
 				fcrop.frame = frame_ranks_[fr].frame;
 				fcrop.index = face_index;
 				fcrop.pixels = crop_width * crop_height;
+				fcrop.score = boxes[f].score;
 				fcrop.width = (unsigned)crop_width;
 				fcrop.height = (unsigned)crop_height;
 				face_crops.push_back(fcrop);
@@ -788,6 +789,24 @@ bool RGBHistogram::extract_face_bitmaps()
 		fclose(crop_info_file);
 	}
 	return true;
+}
+
+bool RGBHistogram::select_final_faces()
+{
+	FILE* crop_info_file = NULL;
+	std::vector<face_crop> face_crops;
+	uint32_t crop_img_count = 0;
+	crop_info_file = fopen("face/face_info.dat","wb");
+
+	if(crop_info_file)
+	{		
+		fread(&crop_img_count,sizeof(crop_img_count),1,crop_info_file);
+		face_crops.resize(crop_img_count);
+		fread(&face_crops[0],sizeof(face_crop),crop_img_count,crop_info_file);
+		fclose(crop_info_file);
+	}
+
+	return false;
 }
 
 bool  RGBHistogram::save_frame_rank(bool thumb)

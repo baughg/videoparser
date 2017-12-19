@@ -79,6 +79,7 @@ typedef struct face_crop
 	unsigned frame;
 	unsigned index;
 	unsigned pixels;
+	float score;
 }face_crop;
 
 class RGBHistogram :	public Histogram
@@ -111,6 +112,8 @@ public:
 		std::vector<uint8_t> &full_image,
 		int &crop_width,
 		int &crop_height);
+
+	static bool select_final_faces();
 protected:
 	bool save_frame_rank(bool thumb=false);
 	bool load_frame_rank(bool thumb=false);

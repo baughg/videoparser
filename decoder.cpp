@@ -71,5 +71,14 @@ int main(int argc, char** argv)
 			printf("face extraction script error!\n");
 		
 	}
+	else if(strcmp(mode.c_str(),"facesel") == 0)
+	{
+		printf("face selection...\n");				
+		
+
+		if(RGBHistogram::select_final_faces())		
+			printf("face extraction script error!\n");
+		
+	}
 	return 0;
 }
