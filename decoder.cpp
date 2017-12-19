@@ -80,5 +80,14 @@ int main(int argc, char** argv)
 			printf("face extraction script error!\n");
 		
 	}
+	else if(strcmp(mode.c_str(),"facealbum") == 0)
+	{
+		printf("face album...\n");				
+		
+
+		if(RGBHistogram::make_face_album())		
+			printf("face extraction script error!\n");
+		
+	}
 	return 0;
 }

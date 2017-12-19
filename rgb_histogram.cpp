@@ -714,9 +714,14 @@ void RGBHistogram::get_image_crop(
 	}
 }
 
-bool sort_by_pixels(face_crop &lhs, face_crop &rhs)
+bool sort_by_pixels(const face_crop &lhs, const face_crop &rhs)
 {
 	return lhs.pixels > rhs.pixels;
+}
+
+bool sort_by_scores(const face_crop &lhs, const face_crop &rhs)
+{
+	return lhs.score > rhs.score;
 }
 
 bool RGBHistogram::extract_face_bitmaps()
@@ -791,19 +796,177 @@ bool RGBHistogram::extract_face_bitmaps()
 	return true;
 }
 
+bool RGBHistogram::make_face_album()
+{
+	FILE* crop_info_file = NULL;
+
+	std::vector<face_crop> face_crops;
+	uint32_t crop_img_count = 0;
+	crop_info_file = fopen("facesel/face_info.dat","rb");
+	uint32_t face_index = 0;
+	char file_name_in[256];
+	char file_name_out[256];
+	
+	int width = 0, height = 0, planes = 0;
+	std::vector<uint8_t> frame_bitmap;
+	std::vector<uint8_t> album_bitmap;
+	//std::ofstream exec_script("");
+	std::string face_resize_file = "face_album.";
+
+#ifdef _WIN32
+	face_resize_file.append("bat");
+#else
+	face_resize_file.append("sh");
+#endif	
+
+	if(crop_info_file)
+	{				
+		std::ofstream exec_script(face_resize_file.c_str());
+		fread(&crop_img_count,sizeof(crop_img_count),1,crop_info_file);
+		face_crops.resize(crop_img_count);		
+		fread(&face_crops[0],sizeof(face_crop),crop_img_count,crop_info_file);
+		fclose(crop_info_file);
+
+		crop_img_count = crop_img_count > 256 ? 256 : crop_img_count;
+
+		uint32_t album_height = (crop_img_count >> 4) + 1;
+		uint32_t album_width = crop_img_count > 16 ? 16 : crop_img_count;
+		
+		album_height <<= 8;
+		album_width <<= 8;
+		album_bitmap.resize(album_height * album_width * 3);
+		uint8_t* p_album_bitmap = &album_bitmap[0];
+		uint32_t x_offset = 0, y_offset = 0;
+		const uint32_t album_stride = album_width * 3;
+		const uint32_t face_stride = 256 * 3;
+		uint8_t* p_album_pixel = p_album_bitmap;
+		
+		for(uint32_t f = 0; f < crop_img_count; ++f)
+		{	
+			sprintf(file_name_in,"facesel/%05u.bmp",face_index);	
+			FrameServer::ReadBitmap(std::string(file_name_in),width,height,planes,frame_bitmap);
+			x_offset = face_index % 16;
+			y_offset = face_index >> 4;
+			x_offset <<= 8;
+			x_offset *= 3;
+			y_offset <<= 8;
+
+			p_album_pixel = p_album_bitmap;
+
+			p_album_pixel += (y_offset * album_stride);
+			p_album_pixel += x_offset;
+
+			uint8_t* p_face = &frame_bitmap[0];
+		
+			for(uint32_t y = 0; y < 255; ++y)
+			{
+				memcpy(p_album_pixel,p_face,face_stride);
+				p_album_pixel += album_stride;
+				p_face += face_stride;
+			}
+			face_index++;		
+		}
+
+		exec_script << "ffmpeg -i face_album.bmp face_album.png" << std::endl;
+
+#ifdef _WIN32
+			exec_script << "del face_album.bmp" << std::endl;
+#else
+			exec_script << "rm face_album.bmp" << std::endl;
+#endif
+
+		FrameServer::WriteBitmap("face_album.bmp",album_width,album_height,3,p_album_bitmap);
+		exec_script.close();		
+		return true;
+	}
+
+	return false;
+}
+
 bool RGBHistogram::select_final_faces()
 {
 	FILE* crop_info_file = NULL;
+	FILE* crop_info_file_sel = NULL;
 	std::vector<face_crop> face_crops;
+	std::vector<face_crop> face_crops_sel;
 	uint32_t crop_img_count = 0;
-	crop_info_file = fopen("face/face_info.dat","wb");
+	crop_info_file = fopen("face/face_info.dat","rb");
+	uint32_t face_index = 0;
+	char file_name_in[256];
+	char file_name_out[256];
+	char file_name_png[256];
+	int width = 0, height = 0, planes = 0;
+	std::vector<uint8_t> frame_bitmap;
+	//std::ofstream exec_script("");
+	std::string face_resize_file = "face_resize.";
+
+#ifdef _WIN32
+	face_resize_file.append("bat");
+#else
+	face_resize_file.append("sh");
+#endif
+
+	
 
 	if(crop_info_file)
-	{		
+	{				
+		std::ofstream exec_script(face_resize_file.c_str());
 		fread(&crop_img_count,sizeof(crop_img_count),1,crop_info_file);
 		face_crops.resize(crop_img_count);
+		face_crops_sel.reserve(crop_img_count);
 		fread(&face_crops[0],sizeof(face_crop),crop_img_count,crop_info_file);
 		fclose(crop_info_file);
+
+		std::sort(face_crops.begin(),face_crops.end(),sort_by_scores);
+
+		for(uint32_t f = 0; f < crop_img_count; ++f)
+		{
+			if(face_crops[f].score < 5.0f)
+				continue;
+
+			face_crops_sel.push_back(face_crops[f]);
+			sprintf(file_name_in,"face/%05u_%f.bmp",face_crops[f].index, face_crops[f].score);
+			sprintf(file_name_out,"facesel/%05u_%f.bmp",face_index, face_crops[f].score);	
+			sprintf(file_name_png,"facesel/%05u.bmp",face_index);	
+			FrameServer::ReadBitmap(std::string(file_name_in),width,height,planes,frame_bitmap);
+			FrameServer::WriteBitmap(std::string(file_name_out),width,height,planes,&frame_bitmap[0]);
+			
+
+				exec_script 
+				<< "ffmpeg -i "
+				<< file_name_out
+				<< " -vf scale=256:-1 " 
+				<< "temp.png" 
+				<< std::endl;
+
+			exec_script 
+				<< "ffmpeg -i "
+				<< "temp.png"
+				<< " -filter:v \"scale=iw:ih, pad=256:256:(256-iw)/2:(256-ih)/2\" " 
+				<< file_name_png 
+				<< std::endl;
+
+#ifdef _WIN32
+			exec_script << "del temp.png" << std::endl;
+#else
+			exec_script << "rm temp.png" << std::endl;
+#endif
+			face_index++;
+		}
+
+		exec_script.close();
+
+		crop_info_file_sel = fopen("facesel/face_info.dat","wb");
+
+		if(crop_info_file_sel)
+		{
+			std::sort(face_crops_sel.begin(),face_crops_sel.end(),sort_by_scores);
+			crop_img_count = (uint32_t)face_crops_sel.size();
+			fwrite(&crop_img_count,sizeof(crop_img_count),1,crop_info_file_sel);
+			fwrite(&face_crops_sel[0],sizeof(face_crop),crop_img_count,crop_info_file_sel);
+			fclose(crop_info_file_sel);
+		}
+		return true;
 	}
 
 	return false;

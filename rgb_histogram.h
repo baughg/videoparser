@@ -114,6 +114,7 @@ public:
 		int &crop_height);
 
 	static bool select_final_faces();
+	static bool make_face_album();
 protected:
 	bool save_frame_rank(bool thumb=false);
 	bool load_frame_rank(bool thumb=false);
