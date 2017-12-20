@@ -832,6 +832,11 @@ bool RGBHistogram::make_face_album()
 		uint32_t album_height = (crop_img_count >> 4) + 1;
 		uint32_t album_width = crop_img_count > 16 ? 16 : crop_img_count;
 		
+		if(((crop_img_count >> 4) << 4) == crop_img_count)
+		{
+			crop_img_count--;
+		}
+
 		album_height <<= 8;
 		album_width <<= 8;
 		bool no_faces = false;
