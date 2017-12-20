@@ -974,9 +974,9 @@ bool RGBHistogram::select_final_faces()
 				<< std::endl;
 
 #ifdef _WIN32
-			exec_script << "del temp.png" << std::endl;
+			exec_script << "del temp.bmp" << std::endl;
 #else
-			exec_script << "rm temp.png" << std::endl;
+			exec_script << "rm temp.bmp" << std::endl;
 #endif
 			face_index++;
 		}
