@@ -134,9 +134,9 @@ int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames
 		if(stream_info)
 		{
 			uint32_t word_out = 0;// = pFormatCtx->streams[i]->codec->
-			word_out = pFormatCtx->streams[videoStream]->time_base.num;
+			word_out = pFormatCtx->streams[videoStream]->r_frame_rate.num;
 			fwrite(&word_out,sizeof(word_out),1,stream_info);
-			word_out = pFormatCtx->streams[videoStream]->time_base.den;
+			word_out = pFormatCtx->streams[videoStream]->r_frame_rate.den;
 			fwrite(&word_out,sizeof(word_out),1,stream_info);			
 			word_out = pFormatCtx->streams[videoStream]->duration;
 			fwrite(&word_out,sizeof(word_out),1,stream_info);
