@@ -834,7 +834,7 @@ bool RGBHistogram::make_face_album()
 		
 		if(((crop_img_count >> 4) << 4) == crop_img_count)
 		{
-			crop_img_count--;
+			album_height--;
 		}
 
 		album_height <<= 8;
