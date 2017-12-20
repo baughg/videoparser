@@ -9,6 +9,8 @@ rm *.png
 rm frame_rank.dat
 rm frame_rank_thumb.dat
 rm face_detection.sh
+rm face_resize.sh
+rm face_album.sh
 echo running $1
 vdecoder hist $1
 vdecoder rank $1
