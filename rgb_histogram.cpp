@@ -952,7 +952,7 @@ bool RGBHistogram::select_final_faces()
 				<< "ffmpeg -i "
 				<< file_name_out
 				<< " -vf scale=256:-2 " 
-				<< "temp.png" 
+				<< "temp.bmp" 
 				<< std::endl;
 			}
 			else
@@ -961,14 +961,14 @@ bool RGBHistogram::select_final_faces()
 				<< "ffmpeg -i "
 				<< file_name_out
 				<< " -vf scale=-2:256 " 
-				<< "temp.png" 
+				<< "temp.bmp" 
 				<< std::endl;
 			}
 
 
 			exec_script 
-				<< "ffmpeg -i "
-				<< "temp.png"
+				<< "ffmpeg -y -i "
+				<< "temp.bmp"
 				<< " -filter:v \"pad=256:256:(256-iw)/2:(256-ih)/2\" " 
 				<< file_name_png 
 				<< std::endl;
