@@ -128,6 +128,24 @@ int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames
 		if(pFrameRGB==NULL)
 			return -1;
 
+		FILE* stream_info = NULL;
+		stream_info = fopen("stream_info.dat","wb");
+
+		if(stream_info)
+		{
+			uint32_t word_out = 0;// = pFormatCtx->streams[i]->codec->
+			word_out = pFormatCtx->streams[videoStream]->time_base.num;
+			fwrite(&word_out,sizeof(word_out),1,stream_info);
+			word_out = pFormatCtx->streams[videoStream]->time_base.den;
+			fwrite(&word_out,sizeof(word_out),1,stream_info);			
+			word_out = pFormatCtx->streams[videoStream]->duration;
+			fwrite(&word_out,sizeof(word_out),1,stream_info);
+			word_out = pCodecCtx->coded_width;
+			fwrite(&word_out,sizeof(word_out),1,stream_info);
+			word_out = pCodecCtx->coded_height;
+			fwrite(&word_out,sizeof(word_out),1,stream_info);
+			fclose(stream_info);
+		}
 		// Determine required buffer size and allocate buffer
 		numBytes=avpicture_get_size(PIX_FMT_RGB24, pCodecCtx->width,
 			pCodecCtx->height);
@@ -161,6 +179,7 @@ int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames
 		//ReadStream(frame_start);
 
 		if(!mode) {
+			
 			//Colour::canvas_image canvas_ = global_rgb_hist_.canvas();
 			Colour::canvas_image canvas_ = global_rgb_hist_.hilbert_canvas();
 			std::string file_out = "canvas.bmp";
