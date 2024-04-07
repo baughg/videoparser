@@ -2,7 +2,7 @@
 #include <fstream>
 #include <stdio.h>
 #include <cstddef>
-
+#include <libavutil/avutil.h>
 
 
 FrameServer::FrameServer(void): frame_count(0),width(0),height(0),pel_count(0)	
@@ -121,10 +121,10 @@ int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames
 			return -1; // Could not open codec
 
 		// Allocate video frame
-		pFrame=avcodec_alloc_frame();
+		pFrame=av_frame_alloc();
 
 		// Allocate an AVFrame structure
-		pFrameRGB=avcodec_alloc_frame();
+		pFrameRGB=av_frame_alloc();
 		if(pFrameRGB==NULL)
 			return -1;
 
@@ -147,7 +147,7 @@ int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames
 			fclose(stream_info);
 		}
 		// Determine required buffer size and allocate buffer
-		numBytes=avpicture_get_size(PIX_FMT_RGB24, pCodecCtx->width,
+		numBytes=avpicture_get_size(AV_PIX_FMT_RGB24, pCodecCtx->width,
 			pCodecCtx->height);
 		buffer=(uint8_t *)av_malloc(numBytes*sizeof(uint8_t));
 
@@ -159,7 +159,7 @@ int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames
 			pCodecCtx->pix_fmt,
 			pCodecCtx->width,
 			pCodecCtx->height,
-			PIX_FMT_RGB24,
+			AV_PIX_FMT_RGB24,
 			SWS_BILINEAR,
 			NULL,
 			NULL,
@@ -170,7 +170,7 @@ int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames
 		// Assign appropriate parts of buffer to image planes in pFrameRGB
 		// Note that pFrameRGB is an AVFrame, but AVFrame is a superset
 		// of AVPicture
-		avpicture_fill((AVPicture *)pFrameRGB, buffer, PIX_FMT_RGB24,
+		avpicture_fill((AVPicture *)pFrameRGB, buffer, AV_PIX_FMT_RGB24,
 			pCodecCtx->width, pCodecCtx->height);
 
 		//AllocateBlockBuffer(pCodecCtx->height,pCodecCtx->width);
