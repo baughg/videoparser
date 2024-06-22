@@ -1,5 +1,7 @@
 #include "video_frame.h"
 #include <cstddef>
+#include <cstdio>
+#include <cstdint>
 
 VideoFrame::VideoFrame(void): frame_length(0),frame_number(0)
 {
@@ -21,9 +23,10 @@ uint64 VideoFrame::FrameNumber() {
 void VideoFrame::Allocate(uint64 frame_size) {
 	if(frame_size <= 0)
 		return;
-
-	rgb_frame.resize(frame_size*3);	
-	y_frame.resize(frame_size);	
+        const auto double_frame_size {frame_size << 1};	
+        //printf("frame_size=%u",(uint32_t)frame_size);
+	rgb_frame.resize(double_frame_size * 3);	
+	y_frame.resize(double_frame_size);	
 	frame_length = frame_size;
 }
 

@@ -149,7 +149,7 @@ int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames
 		// Determine required buffer size and allocate buffer
 		numBytes=avpicture_get_size(AV_PIX_FMT_RGB24, pCodecCtx->width,
 			pCodecCtx->height);
-		buffer=(uint8_t *)av_malloc(numBytes*sizeof(uint8_t));
+		buffer=(uint8_t *)av_malloc((numBytes<<1)*sizeof(uint8_t));
 
 		sws_ctx =
 			sws_getContext
@@ -177,6 +177,7 @@ int FrameServer::Parse(std::string _video_file, int mode, uint32_t select_frames
 
 		ReadStream(frame_start, mode);
 		//ReadStream(frame_start);
+                printf("ReadStream done\n");
 
 		if(!mode) {
 			
@@ -335,7 +336,7 @@ void FrameServer::ReadStream(std::vector<uint64> &frame_start, int mode) {
 				pFrameRGB->data,
 				pFrameRGB->linesize
 				);
-
+				//printf("pFrame->linesize=%u, pCodecCtx->height=%u, pFrameRGB->linesize=%u",pFrame->linesize[0],pCodecCtx->height,pFrameRGB->linesize[0]);
 
 				// Save the frame to disk
 				//if((i >= 10) && (i <= 10)) {
@@ -407,6 +408,7 @@ void FrameServer::ReadStream(std::vector<uint64> &frame_start, int mode) {
 					}
 
 				begin = true;
+                                //printf("frame %d\n",i);
 				i++;
 			}
 		}
